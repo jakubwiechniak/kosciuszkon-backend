@@ -28,7 +28,7 @@ def user():
     elif request.method == 'GET':
         try:
             users = User.query.all()
-            return success(users.to_dict())
+            return success([simple_user.to_dict() for simple_user in users])
         except:
             return failed("Pobieranie listy użytkowników nie powiodło się")
 
