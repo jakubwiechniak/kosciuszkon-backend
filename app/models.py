@@ -17,6 +17,10 @@ class User(db.Model):
     pet_preference = db.Column(db.Integer)
     user_interests = db.Column(db.Text)
     description = db.Column(db.Text)
+    mood = db.relationship('UserDailyMood', backref='user', lazy='dynamic')
+    messages = db.relationship('Messages', backref='author', lazy='dynamic')
+    match = db.relationship('Match', backref='chatter', lazy='dynamic')
+    goals = db.relationship('Goals', backref='challenger', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -25,7 +29,6 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        #return {c.name: getattr(self, c.name) for c in self.__table__.columns}
         return {
             "id": self.id,
             "username": self.username,
@@ -58,3 +61,78 @@ class User(db.Model):
             "user_interests": self.user_interests,
             "description": self.description
         }
+    
+class Interests(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(30))
+    emoji = db.Column(db.String(30))
+
+    def __repr__(self):
+        return {"id": self.id, "name": self.name, "emoji": self.emoji}
+    
+    def to_dict(self):
+        return {"id": self.id, "name": self.name, "emoji": self.emoji}
+    
+class UserDailyMood(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    mood = db.Column(db.Integer)
+    thankful_for = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return {"id": self.id, "user_id": self.user_id, "mood": self.mood, "thankful_for": self.thankful_for, "timestamp": self.timestamp}
+    
+    def to_dict(self):
+        return {"id": self.id, "user_id": self.user_id, "mood": self.mood, "thankful_for": self.thankful_for, "timestamp": self.timestamp}
+    
+class Messages(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    reciever_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    content = db.Column(db.Text)
+    type = db.Column(db.Integer)
+
+    def __repr__(self):
+        return {"id": self.id, "sender_id": self.sender_id, "reciever_id": self.reciever_id, "sent_at": self.sent_at, "content": self.content, "type": self.type}
+    
+    def to_dict(self):
+        return {"id": self.id, "sender_id": self.sender_id, "reciever_id": self.reciever_id, "sent_at": self.sent_at, "content": self.content, "type": self.type}
+    
+class Match(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    first_user = db.Column(db.Integer, db.ForeignKey('user.id'))
+    second_user = db.Column(db.Integer, db.ForeignKey('user.id'))
+    streak_days = db.Column(db.Integer)
+
+    def __repr__(self):
+        return {"id": self.id, "first_user": self.first_user, "second_user": self.second_user, "streak_days": self.streak_days}
+    
+    def to_dict(self):
+        return {"id": self.id, "first_user": self.first_user, "second_user": self.second_user, "streak_days": self.streak_days}
+    
+class Goals(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    goal = db.Column(db.Text)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    emoji = db.Column(db.String(30))
+    background = db.Column(db.String(7))
+    days = db.Column(db.Integer)
+
+    def __repr__(self):
+        return {"id": self.id, "goal": self.goal, "user_id": self.user_id, "emoji": self.emoji, "background": self.background, "days": self.days}
+    
+    def to_dict(self):
+        return {"id": self.id, "goal": self.goal, "user_id": self.user_id, "emoji": self.emoji, "background": self.background, "days": self.days}
+
+class Questions(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.Text)
+    likes = db.Column(db.Integer)
+
+    def __repr__(self):
+        return {"id": self.id, "question": self.question, "likes": self.likes}
+    
+    def to_dict(self):
+        return {"id": self.id, "question": self.question, "likes": self.likes}
