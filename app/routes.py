@@ -1,8 +1,9 @@
 from app import app, db
-from app.models import User, Interests
+from app.models import User, Interests, UserDailyMood
 from app.common.response import success, failed
 from flask import request
 from werkzeug.exceptions import HTTPException
+from deepface import DeepFace
 from datetime import datetime
 import base64, os
 
@@ -115,18 +116,36 @@ def interests_simple(interest_id):
             return failed("Usuwanie zainteresowania nie powiodło się")
 
 
-@app.route('/mood', methods=['POST', 'GET'])
+@app.route('/mood', methods=['POST'])
 def mood():
     if request.method == 'POST':
-        f = open("image.png", "wb")
-        f.write(base64.b64decode(request.json['image']))
-        f.close()
-        face = DeepFace.analyze(img_path="image.png")
-        os.remove("image.png")
+        try:
+            f = open("image.png", "wb")
+            f.write(base64.b64decode(request.json['image']))
+            f.close()
+            mood_value = 100 - round(DeepFace.analyze(img_path="image.png")[0]['emotion']['happy']) - round(DeepFace.analyze(img_path="image.png")[0]['emotion']['sad'])
+            os.remove("image.png")
 
-        print(face[0]['dominant_emotion'])
+            user_daily_mood = UserDailyMood(user_id=request.json['user_id'], thankful_for=request.json['thankful_for'],
+                                            mood=mood_value, timestamp=datetime.now())
+            db.session.add(user_daily_mood)
+            db.session.commit()
 
-        return face[0]['dominant_emotion']
+            return success(user_daily_mood.to_dict())
+        except:
+            return failed("Dodanie dzisiejszego samopoczucia nie powiodło się")
+
+
+@app.route('/mood/<user_id>', methods=['GET'])
+def mood_simple(user_id):
+    if request.method == 'GET':
+        try:
+            moods = UserDailyMood.query.filter_by(user_id=user_id)
+            return success([simple_mood.to_dict() for simple_mood in moods])
+        except:
+            return failed("Pobranie listy codziennego samopoczucia użytkownika nie powiodło się")
+
+
 
 
 @app.errorhandler(HTTPException)
