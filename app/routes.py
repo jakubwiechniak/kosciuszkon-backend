@@ -13,7 +13,7 @@ def register():
     newuser.set_password(request.json['password'])
     db.session.add(newuser)
     db.session.commit()
-    return newuser.to_dict()
+    return "dodano uzytkownika"
 
 @app.route('/user/<user_id>', methods = ['GET', 'PUT', 'DELETE'])
 def user(user_id):
