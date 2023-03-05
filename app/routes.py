@@ -10,20 +10,29 @@ def index():
     return 'Hello World!'
 
 
-@app.route('/user', methods=['POST'])
+@app.route('/user', methods=['POST', 'GET'])
 def user():
-    try:
-        newuser = User(username=request.json['username'], email=request.json['email'],
-                       first_name=request.json['first_name'], last_name=request.json['last_name'],
-                       avatar=request.json['avatar'], dark_theme=request.json['dark_theme'],
-                       friends=request.json['friends'], pet_preference=request.json['pet_preference'],
-                       user_interests=request.json['user_interests'], description=request.json['description'])
-        newuser.set_password(request.json['password'])
-        db.session.add(newuser)
-        db.session.commit()
-        return success(newuser.to_dict())
-    except:
-        return failed("Rejestracja użytkownika nie powiodła się")
+    if request.method == 'POST':
+        try:
+            newuser = User(username=request.json['username'], email=request.json['email'],
+                           first_name=request.json['first_name'], last_name=request.json['last_name'],
+                           avatar=request.json['avatar'], dark_theme=request.json['dark_theme'],
+                           friends=request.json['friends'], pet_preference=request.json['pet_preference'],
+                           user_interests=request.json['user_interests'], description=request.json['description'])
+            newuser.set_password(request.json['password'])
+            db.session.add(newuser)
+            db.session.commit()
+            return success(newuser.to_dict())
+        except:
+            return failed("Rejestracja użytkownika nie powiodła się")
+    elif request.method == 'GET':
+        users = User.query.all()
+        return success([simple_user.to_dict() for simple_user in users])
+        # try:
+        #     users = User.query.all()
+        #     return success(users.to_dict())
+        # except:
+        #     return failed("Pobieranie listy użytkowników nie powiodło się")
 
 
 @app.route('/user/<user_id>', methods=['GET', 'PUT', 'DELETE'])
@@ -34,6 +43,26 @@ def user_simple(user_id):
             return success(user.to_dict())
         except:
             return failed("Nie znaleziono użytkownika")
+    elif request.method == 'PUT':
+        try:
+            User.query.filter_by(id=user_id).update(dict(request.json))
+
+            db.session.commit()
+
+            user = User.query.get(user_id)
+
+            return success(user.to_dict())
+        except:
+            return failed("Aktualizacja użytkownika nie powiodła się")
+    elif request.method == 'DELETE':
+        try:
+            user = User.query.get(user_id)
+            db.session.delete(user)
+            db.session.commit()
+
+            return success({"id": user_id})
+        except:
+            return failed("Usuwanie użytkownika nie powiodło się")
 
 
 @app.route('/login', methods=['POST'])
