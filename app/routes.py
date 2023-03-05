@@ -4,16 +4,18 @@ from app.common.response import success, failed
 from flask import request
 from werkzeug.exceptions import HTTPException
 from datetime import datetime
+import base64, os
+
 
 @app.route('/user', methods=['POST', 'GET'])
 def user():
     if request.method == 'POST':
-            user_props = {name: request.json[name] for name in request.json if name not in {'password'}}
-            newuser = User(**user_props)
-            newuser.set_password(request.json['password'])
-            db.session.add(newuser)
-            db.session.commit()
-            return success(newuser.to_dict())
+        user_props = {name: request.json[name] for name in request.json if name not in {'password'}}
+        newuser = User(**user_props)
+        newuser.set_password(request.json['password'])
+        db.session.add(newuser)
+        db.session.commit()
+        return success(newuser.to_dict())
 
     elif request.method == 'GET':
         try:
@@ -72,6 +74,7 @@ def login():
         except:
             return failed("Logowanie nie powiodło się")
 
+
 @app.route('/interests', methods=['POST'])
 def interests():
     if request.method == 'POST':
@@ -84,6 +87,7 @@ def interests():
         except:
             return failed("Wprowadzanie zainteresowania nie powiodło się")
 
+
 @app.route('/interests/<interest_id>', methods=['GET', 'PUT', 'DELETE'])
 def interests_simple(interest_id):
     if request.method == 'GET':
@@ -92,7 +96,7 @@ def interests_simple(interest_id):
             return success(interest.to_dict())
         except:
             return failed("Nie znaleziono zainteresowania")
-        
+
     if request.method == 'PUT':
         try:
             Interests.query.filter_by(id=interest_id).update(dict(request.json))
@@ -109,6 +113,21 @@ def interests_simple(interest_id):
             return success({"id": interest_id})
         except:
             return failed("Usuwanie zainteresowania nie powiodło się")
+
+
+@app.route('/mood', methods=['POST', 'GET'])
+def mood():
+    if request.method == 'POST':
+        f = open("image.png", "wb")
+        f.write(base64.b64decode(request.json['image']))
+        f.close()
+        face = DeepFace.analyze(img_path="image.png")
+        os.remove("image.png")
+
+        print(face[0]['dominant_emotion'])
+
+        return face[0]['dominant_emotion']
+
 
 @app.errorhandler(HTTPException)
 def handle_exception(e):
