@@ -9,11 +9,11 @@ def index():
 
 @app.route('/user', methods=['POST'])
 def register():
-    newuser = User(username=request.json['username'], email=request.json['email'])
+    newuser = User(username=request.json['username'], email=request.json['email'], first_name=request.json['first_name'], last_name=request.json['last_name'], avatar=request.json['avatar'], dark_theme=request.json['dark_theme'], friends=request.json['friends'], pet_preference=request.json['pet_preference'], user_interests=request.json['user_interests'], description=request.json['description'])
     newuser.set_password(request.json['password'])
     db.session.add(newuser)
     db.session.commit()
-    return "Dodano użytkownika"
+    return newuser.to_dict()
 
 @app.route('/user/<user_id>', methods = ['GET', 'PUT', 'DELETE'])
 def user(user_id):
