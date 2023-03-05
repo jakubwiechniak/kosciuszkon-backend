@@ -26,13 +26,11 @@ def user():
         except:
             return failed("Rejestracja użytkownika nie powiodła się")
     elif request.method == 'GET':
-        users = User.query.all()
-        return success([simple_user.to_dict() for simple_user in users])
-        # try:
-        #     users = User.query.all()
-        #     return success(users.to_dict())
-        # except:
-        #     return failed("Pobieranie listy użytkowników nie powiodło się")
+        try:
+            users = User.query.all()
+            return success(users.to_dict())
+        except:
+            return failed("Pobieranie listy użytkowników nie powiodło się")
 
 
 @app.route('/user/<user_id>', methods=['GET', 'PUT', 'DELETE'])
