@@ -1,22 +1,25 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from app import db
+import uuid
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
+    token = db.Column(db.String(128), default=str(uuid.uuid4()))
     first_name = db.Column(db.String(120))
     last_name = db.Column(db.String(120))
-    avatar = db.Column(db.Text)
-    dark_theme = db.Column(db.Boolean)
-    friends = db.Column(db.Text)
+    age = db.Column(db.Integer)
+    avatar = db.Column(db.Text, nullable=True)
+    dark_theme = db.Column(db.Boolean, default=False)
+    friends = db.Column(db.Text, nullable=True)
     registration = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
-    pet_preference = db.Column(db.Integer)
-    user_interests = db.Column(db.Text)
-    description = db.Column(db.Text)
+    pet_preference = db.Column(db.Integer, nullable=True)
+    user_interests = db.Column(db.Text, nullable=True)
+    description = db.Column(db.Text, nullable=True)
     mood = db.relationship('UserDailyMood', backref='user', lazy='dynamic')
     messages = db.relationship('Messages', backref='author', lazy='dynamic')
     match = db.relationship('Match', backref='chatter', lazy='dynamic')
@@ -89,7 +92,7 @@ class UserDailyMood(db.Model):
 class Messages(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    reciever_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    reciever_id = db.Column(db.Integer)
     sent_at = db.Column(db.DateTime, default=datetime.utcnow)
     content = db.Column(db.Text)
     type = db.Column(db.Integer)
@@ -103,7 +106,7 @@ class Messages(db.Model):
 class Match(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     first_user = db.Column(db.Integer, db.ForeignKey('user.id'))
-    second_user = db.Column(db.Integer, db.ForeignKey('user.id'))
+    second_user = db.Column(db.Integer)
     streak_days = db.Column(db.Integer)
 
     def __repr__(self):

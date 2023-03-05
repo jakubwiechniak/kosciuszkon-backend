@@ -1,30 +1,20 @@
 from app import app, db
-from app.models import User
+from app.models import User, Interests
 from app.common.response import success, failed
 from flask import request
 from werkzeug.exceptions import HTTPException
-
-
-@app.route('/index')
-def index():
-    return 'Hello World!'
-
+from datetime import datetime
 
 @app.route('/user', methods=['POST', 'GET'])
 def user():
     if request.method == 'POST':
-        try:
-            newuser = User(username=request.json['username'], email=request.json['email'],
-                           first_name=request.json['first_name'], last_name=request.json['last_name'],
-                           avatar=request.json['avatar'], dark_theme=request.json['dark_theme'],
-                           friends=request.json['friends'], pet_preference=request.json['pet_preference'],
-                           user_interests=request.json['user_interests'], description=request.json['description'])
+            user_props = {name: request.json[name] for name in request.json if name not in {'password'}}
+            newuser = User(**user_props)
             newuser.set_password(request.json['password'])
             db.session.add(newuser)
             db.session.commit()
             return success(newuser.to_dict())
-        except:
-            return failed("Rejestracja użytkownika nie powiodła się")
+
     elif request.method == 'GET':
         try:
             users = User.query.all()
@@ -73,12 +63,52 @@ def login():
                 if user is None:
                     return failed("Nie istnieję użytkownik o podanej nazwie/e-mailu")
             if user.check_password(request.json['password']):
-                return success(user.to_dict())
+                User.query.get(user).update({"last_login": datetime.utcnow})
+                db.session.commit()
+                post_update_user = User.query.get(user.id)
+                return success(post_update_user.to_dict())
             else:
                 return failed("Nieprawidłowe hasło")
         except:
             return failed("Logowanie nie powiodło się")
 
+@app.route('/interests', methods=['POST'])
+def interests():
+    if request.method == 'POST':
+        try:
+            interest = Interests(name=request.json['name'], emoji=request.json['emoji'])
+            db.session.add(interest)
+            db.session.commit()
+
+            return success(interest.to_dict())
+        except:
+            return failed("Wprowadzanie zainteresowania nie powiodło się")
+
+@app.route('/interests/<interest_id>', methods=['GET', 'PUT', 'DELETE'])
+def interests_simple(interest_id):
+    if request.method == 'GET':
+        try:
+            interest = Interests.query.get(interest_id)
+            return success(interest.to_dict())
+        except:
+            return failed("Nie znaleziono zainteresowania")
+        
+    if request.method == 'PUT':
+        try:
+            Interests.query.filter_by(id=interest_id).update(dict(request.json))
+            db.session.commit()
+            interest = Interests.query.get(interest_id)
+            return success(interest.to_dict())
+        except:
+            return failed("Aktualizacja zainteresowania nie powiodła się")
+    if request.method == 'DELETE':
+        try:
+            interest = Interests.query.get(interest_id)
+            db.session.delete(interest)
+            db.session.commit()
+            return success({"id": interest_id})
+        except:
+            return failed("Usuwanie zainteresowania nie powiodło się")
 
 @app.errorhandler(HTTPException)
 def handle_exception(e):
