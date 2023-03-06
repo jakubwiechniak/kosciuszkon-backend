@@ -1,10 +1,13 @@
+import json
+
 from app import app, db
-from app.models import User, Interests, UserDailyMood
+from app.models import User, Interests, UserDailyMood, Messages
 from app.common.response import success, failed
 from flask import request
 from werkzeug.exceptions import HTTPException
 from deepface import DeepFace
 from datetime import datetime
+from sqlalchemy import or_, and_
 import base64, os
 
 
@@ -183,9 +186,33 @@ def get_friends(user_id):
             return success(user.friends)
         except:
             return failed("Nie udało się pobrać listy przyjaciół")
-            
 
 
-# @app.errorhandler(HTTPException)
-# def handle_exception(e):
-#     return failed("Podany URL nie istnieje")
+@app.route('/message', methods=['POST'])
+def message():
+    if request.method == 'POST':
+        message = Messages(sender_id=request.json['sender_id'], reciever_id=request.json['reciever_id'],
+                           sent_at=datetime.now(), content=request.json['content'],
+                           type=1)
+        db.session.add(message)
+        db.session.commit()
+        return success(message.to_dict())
+
+
+@app.route('/message/<user_id>', methods=['GET'])
+def message_simple(user_id):
+    if request.method == 'GET':
+        user = User.query.get(user_id)
+        messages = []
+        for id in json.loads(user.friends):
+            messages.append({
+                "id": id,
+                "messages": [message.to_dict() for message in Messages.query.filter(or_(and_(Messages.reciever_id == user_id, Messages.sender_id == id),
+                                                                                        and_(Messages.sender_id == user_id, Messages.reciever_id == id)))]
+            })
+        return messages
+
+
+@app.errorhandler(HTTPException)
+def handle_exception(e):
+    return failed("Podany URL nie istnieje")
