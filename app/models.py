@@ -77,9 +77,11 @@ class User(db.Model):
             "friends": self.friends,
             "pet_preference": self.pet_preference,
             "user_interests": self.user_interests,
-            "description": self.description
+            "description": self.description,
+            "personality_type_one": self.personality_type_one,
+            "personality_type_two": self.personality_type_two,
         }
-    
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -93,8 +95,10 @@ class User(db.Model):
             "dark_theme": self.dark_theme,
             "friends": self.friends,
             "pet_preference": self.pet_preference,
-            "user_interests": (json.loads(self.user_interests) if self.user_interests is not None else self.user_interests),
-            "description": self.description
+            "user_interests": self.user_interests,
+            "description": self.description,
+            "personality_type_one": self.personality_type_one,
+            "personality_type_two": self.personality_type_two,
         }
     
 class UserDailyMood(db.Model):
