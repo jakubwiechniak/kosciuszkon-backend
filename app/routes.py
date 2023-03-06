@@ -140,7 +140,6 @@ def mood():
                                             mood=mood_value, timestamp=datetime.now())
             db.session.add(user_daily_mood)
             db.session.commit()
-            print(user_daily_mood.to_dict())
             return success(user_daily_mood.to_dict())
         except:
             return failed("Dodanie dzisiejszego samopoczucia nie powiodło się")
