@@ -1,7 +1,8 @@
 import json
+import random
 
 from app import app, db
-from app.models import User, UserDailyMood, Messages
+from app.models import User, UserDailyMood, Messages, Questions, QuestionForConversation
 from app.common.response import success, failed
 from app.common.interests import interests as proposed_interests
 from app.common.personality_type_one import personality_type_one
@@ -41,15 +42,15 @@ def user_simple(user_id):
         except:
             return failed("Nie znaleziono użytkownika")
     if request.method == 'PUT':
-            print("body")
-            print(request.json)
-            User.query.filter_by(id=user_id).update(dict(request.json))
+        print("body")
+        print(request.json)
+        User.query.filter_by(id=user_id).update(dict(request.json))
 
-            db.session.commit()
+        db.session.commit()
 
-            user = User.query.get(user_id)
-            print(user.to_dict())
-            return success(user.to_dict())
+        user = User.query.get(user_id)
+        print(user.to_dict())
+        return success(user.to_dict())
     if request.method == 'DELETE':
         try:
             user = User.query.get(user_id)
@@ -59,6 +60,7 @@ def user_simple(user_id):
             return success({"id": user_id})
         except:
             return failed("Usuwanie użytkownika nie powiodło się")
+
 
 @app.route('/token', methods=['POST'])
 def check_token():
@@ -71,7 +73,7 @@ def check_token():
                 return success(user.to_dict())
         except:
             return failed("Coś poszło nie tak")
-            
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -113,7 +115,7 @@ def mood():
     if request.method == 'POST':
         try:
             f = open("image.jpg", "wb")
-            
+
             f.write(base64.b64decode(request.json['image']))
             f.close()
             analyze = DeepFace.analyze(img_path="image.jpg")[0]['emotion']
@@ -138,16 +140,21 @@ def mood_simple(user_id):
         except:
             return failed("Pobranie listy codziennego samopoczucia użytkownika nie powiodło się")
 
+
 @app.route('/user/<user_id>/friends', methods=['POST', 'DELETE'])
 def add_friend(user_id):
     if request.method == 'POST':
-            user = User.query.get(user_id)
-            if user.add_friend(request.json['friend_id']):
-                db.session.commit()
-                return success(user.friends)
-            else:
-                return failed("Friend already exists!")
-        
+        user = User.query.get(user_id)
+        if user.add_friend(request.json['friend_id']):
+            question = QuestionForConversation(user_one_id=user_id, user_two_id=request.json['friend_id'],
+                                               question=random.choice([simple_question.to_dict() for simple_question in
+                                                                       Questions.query.all()])['question'])
+            db.session.add(question)
+            db.session.commit()
+            return success(user.friends)
+        else:
+            return failed("Użytkownik jest już przyjacielem")
+
     if request.method == 'DELETE':
         try:
             user = User.query.get(user_id)
@@ -155,10 +162,11 @@ def add_friend(user_id):
                 db.session.commit()
                 return success(user.friends)
             else:
-                return failed("There's no such friend")
+                return failed("Przyjaciel nie istnieje")
         except:
             return failed("Usunięcie przyjaciela się nie udało")
-        
+
+
 @app.route('/friends/<user_id>', methods=['GET'])
 def get_friends(user_id):
     if request.method == 'GET':
@@ -194,15 +202,21 @@ def message_simple(user_id):
         try:
             user = User.query.get(user_id)
             messages = []
+            print(QuestionForConversation.query.first().to_dict())
             for id in json.loads(user.friends):
                 messages.append({
                     "id": id,
-                    "messages": [message.to_dict() for message in Messages.query.filter(or_(and_(Messages.receiver_id == user_id, Messages.sender_id == id),
-                                                                                            and_(Messages.sender_id == user_id, Messages.receiver_id == id)))]
+                    "messages": [message.to_dict() for message in Messages.query.filter(
+                        or_(and_(Messages.receiver_id == user_id, Messages.sender_id == id),
+                            and_(Messages.sender_id == user_id, Messages.receiver_id == id)))],
+                    "question": [question.to_dict() for question in QuestionForConversation.query.filter(
+                        or_(and_(QuestionForConversation.user_one_id == user_id, QuestionForConversation.user_two_id == id),
+                            and_(QuestionForConversation.user_one_id == id,
+                                 QuestionForConversation.user_two_id == user_id)))][0]['question'],
                 })
-            return messages
+            return success(messages)
         except:
-            failed("Nie udało się pobrać listy wiadomości")
+            return failed("Nie udało pobrać się listy pytań")
 
 
 @app.errorhandler(HTTPException)

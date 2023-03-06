@@ -159,3 +159,16 @@ class Questions(db.Model):
     
     def to_dict(self):
         return {"id": self.id, "question": self.question, "likes": self.likes}
+
+
+class QuestionForConversation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.Text)
+    user_one_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_two_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return {"id": self.id, "question": self.question, "user_one_id": self.user_one_id, "user_two_id": self.user_two_id }
+
+    def to_dict(self):
+        return {"id": self.id, "question": self.question, "user_one_id": self.user_one_id, "user_two_id": self.user_two_id }
