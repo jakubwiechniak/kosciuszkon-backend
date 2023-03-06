@@ -3,6 +3,7 @@ import json
 from app import app, db
 from app.models import User, UserDailyMood, Messages
 from app.common.response import success, failed
+from app.common.interests import interests as proposed_interests
 from flask import request
 from werkzeug.exceptions import HTTPException
 from deepface import DeepFace
@@ -87,44 +88,10 @@ def login():
             return failed("Logowanie nie powiodło się")
 
 
-# @app.route('/interests', methods=['POST'])
-# def interests():
-#     if request.method == 'POST':
-#         try:
-#             interest = Interests(name=request.json['name'], emoji=request.json['emoji'])
-#             db.session.add(interest)
-#             db.session.commit()
-
-#             return success(interest.to_dict())
-#         except:
-#             return failed("Wprowadzanie zainteresowania nie powiodło się")
-
-
-# @app.route('/interests/<interest_id>', methods=['GET', 'PUT', 'DELETE'])
-# def interests_simple(interest_id):
-#     if request.method == 'GET':
-#         try:
-#             user = User.query.get(user_id)
-#             return success(user.interests)
-#         except:
-#             return failed("Nie znaleziono zainteresowania")
-
-#     if request.method == 'PUT':
-#         try:
-#             Interests.query.filter_by(id=interest_id).update(dict(request.json))
-#             db.session.commit()
-#             interest = Interests.query.get(interest_id)
-#             return success(interest.to_dict())
-#         except:
-#             return failed("Aktualizacja zainteresowania nie powiodła się")
-#     if request.method == 'DELETE':
-#         try:
-#             interest = Interests.query.get(interest_id)
-#             db.session.delete(interest)
-#             db.session.commit()
-#             return success({"id": interest_id})
-#         except:
-#             return failed("Usuwanie zainteresowania nie powiodło się")
+@app.route('/interests', methods=['GET'])
+def interests():
+    if request.method == 'GET':
+        return success(proposed_interests)
 
 
 @app.route('/mood', methods=['POST'])
