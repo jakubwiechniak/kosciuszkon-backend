@@ -4,6 +4,8 @@ from app import app, db
 from app.models import User, UserDailyMood, Messages
 from app.common.response import success, failed
 from app.common.interests import interests as proposed_interests
+from app.common.personality_type_one import personality_type_one
+from app.common.personality_type_two import personality_type_two
 from flask import request
 from werkzeug.exceptions import HTTPException
 from deepface import DeepFace
@@ -92,6 +94,18 @@ def login():
 def interests():
     if request.method == 'GET':
         return success(proposed_interests)
+
+
+@app.route('/personality-one', methods=['GET'])
+def personality_one():
+    if request.method == 'GET':
+        return success(personality_type_one)
+
+
+@app.route('/personality-two', methods=['GET'])
+def personality_two():
+    if request.method == 'GET':
+        return success(personality_type_two)
 
 
 @app.route('/mood', methods=['POST'])
