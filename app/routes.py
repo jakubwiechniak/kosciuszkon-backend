@@ -78,7 +78,6 @@ def check_token():
 @app.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
-        try:
             user = User.query.filter_by(email=request.json['email']).first()
             if user is None:
                 user = User.query.filter_by(username=request.json['email']).first()
@@ -88,8 +87,6 @@ def login():
                 return success(user.to_dict())
             else:
                 return failed("Nieprawidłowe hasło")
-        except:
-            return failed("Logowanie nie powiodło się")
 
 
 @app.route('/interests', methods=['GET'])
@@ -135,7 +132,7 @@ def mood():
 def mood_simple(user_id):
     if request.method == 'GET':
         try:
-            moods = UserDailyMood.query.filter_by(user_id=user_id)
+            moods = UserDailyMood.query.filter_by(user_id=user_id).order_by(UserDailyMood.timestamp.desc())
             return success([simple_mood.to_dict() for simple_mood in moods])
         except:
             return failed("Pobranie listy codziennego samopoczucia użytkownika nie powiodło się")
@@ -170,16 +167,18 @@ def add_friend(user_id):
 @app.route('/friends/<user_id>', methods=['GET'])
 def get_friends(user_id):
     if request.method == 'GET':
-        try:
             user = User.query.get(user_id)
             friends = user.get_friends()
             print(friends)
             if friends:
-                return success([User.query.get(id).to_dict() for id in friends])
+                user_friends = []
+                for friend_id in friends:
+                    f = User.query.get(friend_id)
+                    if f is not None:
+                        user_friends.append(f.to_dict())
+                return success(user_friends)
             else:
                 return failed(None)
-        except:
-            return failed("Nie udało się pobrać listy przyjaciół")
 
 
 @app.route('/message', methods=['POST'])

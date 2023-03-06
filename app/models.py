@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 from app import db
 import uuid
+import json
 import ast
 
 class User(db.Model):
@@ -92,7 +93,7 @@ class User(db.Model):
             "dark_theme": self.dark_theme,
             "friends": self.friends,
             "pet_preference": self.pet_preference,
-            "user_interests": self.user_interests,
+            "user_interests": (json.loads(self.user_interests) if self.user_interests is not None else self.user_interests),
             "description": self.description
         }
     
