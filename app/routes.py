@@ -178,7 +178,7 @@ def get_friends(user_id):
 def message():
     if request.method == 'POST':
         try:
-            message = Messages(sender_id=request.json['sender_id'], reciever_id=request.json['receiver_id'],
+            message = Messages(sender_id=request.json['sender_id'], receiver_id=request.json['receiver_id'],
                                sent_at=datetime.now(), content=request.json['content'],
                                type=1)
             db.session.add(message)
