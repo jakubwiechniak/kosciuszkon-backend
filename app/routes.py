@@ -1,5 +1,7 @@
 import json
+import math
 import random
+from datetime import timedelta
 
 from app import app, db
 from app.models import User, UserDailyMood, Messages, Questions, QuestionForConversation
@@ -75,18 +77,85 @@ def check_token():
             return failed("Coś poszło nie tak")
 
 
+@app.route('/match/<user_id>', methods=['GET'])
+def match(user_id):
+    if request.method == 'GET':
+        users = [simple_user.to_dict() for simple_user in User.query.all()]
+        current_user = User.query.get(user_id).to_dict()
+        max = -1
+        match_id = None
+        match_tab = []
+        for user in users:
+            if int(user_id) != int(user['id']):
+                score = 0
+
+                # Zainteresowania
+                current_interests = json.loads(current_user['user_interests'])
+                user_interests = json.loads(user['user_interests'])
+                for interest in current_interests:
+                    for interest2 in user_interests:
+                        if interest == interest2:
+                            score += 15
+
+                # Wiek
+                points = 10 - math.fabs(current_user['age'] - user['age'])
+                if points > 0:
+                    score += points * 10
+
+                # Samopoczucie
+                date = datetime.today() - timedelta(days=3)
+                current_moods = UserDailyMood.query.filter(and_(UserDailyMood.user_id == user_id,
+                                                                UserDailyMood.timestamp > date)).all()
+                user_moods = UserDailyMood.query.filter(and_(UserDailyMood.user_id == user['id'],
+                                                             UserDailyMood.timestamp > date)).all()
+
+                sum = 0
+                for mood in current_moods:
+                    sum += mood.mood
+
+                sum2 = 0
+                for mood in user_moods:
+                    sum2 += mood.mood
+
+                if current_moods == [] and user_moods == []:
+                    score += math.fabs(sum/3 - sum2/3)
+
+                # Typ osobowości 1
+                if current_user['personality_type_one'] == user['personality_type_one']:
+                    score += 50
+                elif current_user['personality_type_one'] == 'Ciężko powiedzieć' or user['personality_type_one'] == 'Ciężko powiedzieć':
+                    score += 25
+
+                # Typ osobowości 1
+                if current_user['personality_type_two'] == user['personality_type_two']:
+                    score += 50
+                elif current_user['personality_type_two'] == 'Ciężko powiedzieć' or user['personality_type_two'] == 'Ciężko powiedzieć':
+                    score += 15
+
+                if score > max:
+                    max = score
+                    match_id = user['id']
+                if score > 100:
+                    match_tab.append(user['id'])
+
+        match_tab.append(match_id)
+        print(match_tab)
+        user = User.query.get(random.choice(match_tab)).to_dict()
+        return user
+
+
 @app.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
-            user = User.query.filter_by(email=request.json['email']).first()
+        user = User.query.filter_by(email=request.json['email']).first()
+        if user is None:
+            user = User.query.filter_by(username=request.json['email']).first()
             if user is None:
-                user = User.query.filter_by(username=request.json['email']).first()
-                if user is None:
-                    return failed("Nie istnieję użytkownik o podanej nazwie/e-mailu")
-            if user.check_password(request.json['password']):
-                return success(user.to_dict())
-            else:
-                return failed("Nieprawidłowe hasło")
+                return failed("Nie istnieję użytkownik o podanej nazwie/e-mailu")
+        if user.check_password(request.json['password']):
+            return success(user.to_dict())
+        else:
+            return failed("Nieprawidłowe hasło")
 
 
 @app.route('/interests', methods=['GET'])
@@ -167,18 +236,18 @@ def add_friend(user_id):
 @app.route('/friends/<user_id>', methods=['GET'])
 def get_friends(user_id):
     if request.method == 'GET':
-            user = User.query.get(user_id)
-            friends = user.get_friends()
-            print(friends)
-            if friends:
-                user_friends = []
-                for friend_id in friends:
-                    f = User.query.get(friend_id)
-                    if f is not None:
-                        user_friends.append(f.to_dict())
-                return success(user_friends)
-            else:
-                return failed(None)
+        user = User.query.get(user_id)
+        friends = user.get_friends()
+        print(friends)
+        if friends:
+            user_friends = []
+            for friend_id in friends:
+                f = User.query.get(friend_id)
+                if f is not None:
+                    user_friends.append(f.to_dict())
+            return success(user_friends)
+        else:
+            return failed(None)
 
 
 @app.route('/message', methods=['POST'])
@@ -209,7 +278,8 @@ def message_simple(user_id):
                         or_(and_(Messages.receiver_id == user_id, Messages.sender_id == id),
                             and_(Messages.sender_id == user_id, Messages.receiver_id == id)))],
                     "question": [question.to_dict() for question in QuestionForConversation.query.filter(
-                        or_(and_(QuestionForConversation.user_one_id == user_id, QuestionForConversation.user_two_id == id),
+                        or_(and_(QuestionForConversation.user_one_id == user_id,
+                                 QuestionForConversation.user_two_id == id),
                             and_(QuestionForConversation.user_one_id == id,
                                  QuestionForConversation.user_two_id == user_id)))][0]['question'],
                 })

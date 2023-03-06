@@ -21,6 +21,8 @@ class User(db.Model):
     pet_preference = db.Column(db.Integer, nullable=True)
     user_interests = db.Column(db.Text, nullable=True)
     description = db.Column(db.Text, nullable=True)
+    personality_type_one = db.Column(db.Text, nullable=True)
+    personality_type_two = db.Column(db.Text, nullable=True)
     mood = db.relationship('UserDailyMood', backref='user', lazy='dynamic')
     messages = db.relationship('Messages', backref='author', lazy='dynamic')
     match = db.relationship('Match', backref='chatter', lazy='dynamic')
