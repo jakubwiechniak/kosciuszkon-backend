@@ -1,7 +1,9 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import time
 from app import db
 import uuid
+import ast
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -15,8 +17,6 @@ class User(db.Model):
     avatar = db.Column(db.Text, nullable=True)
     dark_theme = db.Column(db.Boolean, default=False)
     friends = db.Column(db.Text, nullable=True)
-    registration = db.Column(db.DateTime, default=datetime.utcnow)
-    last_login = db.Column(db.DateTime, default=datetime.utcnow)
     pet_preference = db.Column(db.Integer, nullable=True)
     user_interests = db.Column(db.Text, nullable=True)
     description = db.Column(db.Text, nullable=True)
@@ -30,6 +30,29 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def add_friend(self, friend_id):
+        if self.friends is not None:
+            friends_list = ast.literal_eval(self.friends)
+            print(friends_list)
+            if friend_id in friends_list:
+                return False
+            else:
+                friends_list.append(friend_id)
+                self.friends = str(friends_list)
+                return friends_list
+        else:
+            self.friends = '[{}]'.format(friend_id)
+            return self.friends
+        
+    def remove_friend(self, friend_id):
+        friends_list = ast.literal_eval(self.friends)
+        if friend_id in friends_list:
+            friends_list.remove(friend_id)
+            self.friends = str(friends_list)
+            return friends_list
+        else:
+            return False
 
     def __repr__(self):
         return {
@@ -41,8 +64,6 @@ class User(db.Model):
             "avatar": self.avatar,
             "dark_theme": self.dark_theme,
             "friends": self.friends,
-            "registration": self.registration,
-            "last_login": self.last_login,
             "pet_preference": self.pet_preference,
             "user_interests": self.user_interests,
             "description": self.description
@@ -56,10 +77,10 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "avatar": self.avatar,
+            "age": self.age,
+            "token": self.token,
             "dark_theme": self.dark_theme,
             "friends": self.friends,
-            "registration": self.registration,
-            "last_login": self.last_login,
             "pet_preference": self.pet_preference,
             "user_interests": self.user_interests,
             "description": self.description
@@ -93,7 +114,7 @@ class Messages(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     reciever_id = db.Column(db.Integer)
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.TIMESTAMP, default=time.time())
     content = db.Column(db.Text)
     type = db.Column(db.Integer)
 

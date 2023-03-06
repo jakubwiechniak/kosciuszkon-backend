@@ -34,18 +34,17 @@ def user_simple(user_id):
             return success(user.to_dict())
         except:
             return failed("Nie znaleziono użytkownika")
-    elif request.method == 'PUT':
-        try:
+    if request.method == 'PUT':
+            print("body")
+            print(request.json)
             User.query.filter_by(id=user_id).update(dict(request.json))
 
             db.session.commit()
 
             user = User.query.get(user_id)
-
+            print(user.to_dict())
             return success(user.to_dict())
-        except:
-            return failed("Aktualizacja użytkownika nie powiodła się")
-    elif request.method == 'DELETE':
+    if request.method == 'DELETE':
         try:
             user = User.query.get(user_id)
             db.session.delete(user)
@@ -55,6 +54,18 @@ def user_simple(user_id):
         except:
             return failed("Usuwanie użytkownika nie powiodło się")
 
+@app.route('/token', methods=['POST'])
+def check_token():
+    if request.method == 'POST':
+        try:
+            user = User.query.filter_by(token=request.json['token']).first()
+            if user is None:
+                return failed("Token invalid")
+            else:
+                return success(user.to_dict())
+        except:
+            return failed("Coś poszło nie tak")
+            
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -66,10 +77,7 @@ def login():
                 if user is None:
                     return failed("Nie istnieję użytkownik o podanej nazwie/e-mailu")
             if user.check_password(request.json['password']):
-                User.query.get(user).update({"last_login": datetime.utcnow})
-                db.session.commit()
-                post_update_user = User.query.get(user.id)
-                return success(post_update_user.to_dict())
+                return success(user.to_dict())
             else:
                 return failed("Nieprawidłowe hasło")
         except:
@@ -93,8 +101,8 @@ def interests():
 def interests_simple(interest_id):
     if request.method == 'GET':
         try:
-            interest = Interests.query.get(interest_id)
-            return success(interest.to_dict())
+            user = User.query.get(user_id)
+            return success(user.interests)
         except:
             return failed("Nie znaleziono zainteresowania")
 
@@ -120,17 +128,19 @@ def interests_simple(interest_id):
 def mood():
     if request.method == 'POST':
         try:
-            f = open("image.png", "wb")
+            f = open("image.jpg", "wb")
+            
             f.write(base64.b64decode(request.json['image']))
             f.close()
-            mood_value = 100 - round(DeepFace.analyze(img_path="image.png")[0]['emotion']['happy']) - round(DeepFace.analyze(img_path="image.png")[0]['emotion']['sad'])
-            os.remove("image.png")
+            analyze = DeepFace.analyze(img_path="image.jpg")[0]['emotion']
+            mood_value = 100 + round(analyze['happy']) - round(analyze['sad'])
+            os.remove("image.jpg")
 
             user_daily_mood = UserDailyMood(user_id=request.json['user_id'], thankful_for=request.json['thankful_for'],
                                             mood=mood_value, timestamp=datetime.now())
             db.session.add(user_daily_mood)
             db.session.commit()
-
+            print(user_daily_mood.to_dict())
             return success(user_daily_mood.to_dict())
         except:
             return failed("Dodanie dzisiejszego samopoczucia nie powiodło się")
@@ -145,9 +155,38 @@ def mood_simple(user_id):
         except:
             return failed("Pobranie listy codziennego samopoczucia użytkownika nie powiodło się")
 
+@app.route('/user/<user_id>/friends', methods=['POST', 'DELETE'])
+def add_friend(user_id):
+    if request.method == 'POST':
+            user = User.query.get(user_id)
+            if user.add_friend(request.json['friend_id']):
+                db.session.commit()
+                return success(user.friends)
+            else:
+                return failed("Friend already exists!")
+        
+    if request.method == 'DELETE':
+        try:
+            user = User.query.get(user_id)
+            if user.remove_friend(request.json['friend_id']):
+                db.session.commit()
+                return success(user.friends)
+            else:
+                return failed("There's no such friend")
+        except:
+            return failed("Usunięcie przyjaciela się nie udało")
+        
+@app.route('/user/<user_id>/friends', methods=['GET'])
+def get_friends(user_id):
+    if request.method == 'GET':
+        try:
+            user = User.query.get(user_id)
+            return success(user.friends)
+        except:
+            return failed("Nie udało się pobrać listy przyjaciół")
+            
 
 
-
-@app.errorhandler(HTTPException)
-def handle_exception(e):
-    return failed("Podany URL nie istnieje")
+# @app.errorhandler(HTTPException)
+# def handle_exception(e):
+#     return failed("Podany URL nie istnieje")
