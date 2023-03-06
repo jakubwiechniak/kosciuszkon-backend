@@ -119,21 +119,20 @@ def interests_simple(interest_id):
 @app.route('/mood', methods=['POST'])
 def mood():
     if request.method == 'POST':
-        try:
-            f = open("image.png", "wb")
-            f.write(base64.b64decode(request.json['image']))
-            f.close()
-            mood_value = 100 - round(DeepFace.analyze(img_path="image.png")[0]['emotion']['happy']) - round(DeepFace.analyze(img_path="image.png")[0]['emotion']['sad'])
-            os.remove("image.png")
+        f = open("image.jpg", "wb")
+        f.write(base64.b64decode(request.json['image']))
+        f.close()
+        analyze = DeepFace.analyze(img_path="image.jpg")[0]['emotion']
+        mood_value = 100 + round(analyze['happy']) - round(analyze['sad'])
+        os.remove("image.jpg")
 
-            user_daily_mood = UserDailyMood(user_id=request.json['user_id'], thankful_for=request.json['thankful_for'],
-                                            mood=mood_value, timestamp=datetime.now())
-            db.session.add(user_daily_mood)
-            db.session.commit()
+        user_daily_mood = UserDailyMood(user_id=request.json['user_id'], thankful_for=request.json['thankful_for'],
+                                        mood=mood_value, timestamp=datetime.now())
+        db.session.add(user_daily_mood)
+        db.session.commit()
 
-            return success(user_daily_mood.to_dict())
-        except:
-            return failed("Dodanie dzisiejszego samopoczucia nie powiodło się")
+        print("return")
+        return success(user_daily_mood.to_dict())
 
 
 @app.route('/mood/<user_id>', methods=['GET'])
