@@ -46,10 +46,20 @@ class User(db.Model):
             return self.friends
         
     def remove_friend(self, friend_id):
-        friends_list = ast.literal_eval(self.friends)
-        if friend_id in friends_list:
-            friends_list.remove(friend_id)
-            self.friends = str(friends_list)
+        if self.friends is not None:
+            friends_list = ast.literal_eval(self.friends)
+            if friend_id in friends_list:
+                friends_list.remove(friend_id)
+                self.friends = str(friends_list)
+                return friends_list
+            else:
+                return False
+        else:
+            return False
+        
+    def get_friends(self):
+        if self.friends is not None:
+            friends_list = ast.literal_eval(self.friends)
             return friends_list
         else:
             return False
