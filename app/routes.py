@@ -177,26 +177,32 @@ def get_friends(user_id):
 @app.route('/message', methods=['POST'])
 def message():
     if request.method == 'POST':
-        message = Messages(sender_id=request.json['sender_id'], reciever_id=request.json['receiver_id'],
-                           sent_at=datetime.now(), content=request.json['content'],
-                           type=1)
-        db.session.add(message)
-        db.session.commit()
-        return success(message.to_dict())
+        try:
+            message = Messages(sender_id=request.json['sender_id'], reciever_id=request.json['receiver_id'],
+                               sent_at=datetime.now(), content=request.json['content'],
+                               type=1)
+            db.session.add(message)
+            db.session.commit()
+            return success(message.to_dict())
+        except:
+            return failed("Nie udało się wysłać wiadomości")
 
 
 @app.route('/message/<user_id>', methods=['GET'])
 def message_simple(user_id):
     if request.method == 'GET':
-        user = User.query.get(user_id)
-        messages = []
-        for id in json.loads(user.friends):
-            messages.append({
-                "id": id,
-                "messages": [message.to_dict() for message in Messages.query.filter(or_(and_(Messages.receiver_id == user_id, Messages.sender_id == id),
-                                                                                        and_(Messages.sender_id == user_id, Messages.receiver_id == id)))]
-            })
-        return messages
+        try:
+            user = User.query.get(user_id)
+            messages = []
+            for id in json.loads(user.friends):
+                messages.append({
+                    "id": id,
+                    "messages": [message.to_dict() for message in Messages.query.filter(or_(and_(Messages.receiver_id == user_id, Messages.sender_id == id),
+                                                                                            and_(Messages.sender_id == user_id, Messages.receiver_id == id)))]
+                })
+            return messages
+        except:
+            failed("Nie udało się pobrać listy wiadomości")
 
 
 @app.errorhandler(HTTPException)
