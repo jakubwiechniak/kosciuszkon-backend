@@ -86,17 +86,6 @@ class User(db.Model):
             "description": self.description
         }
     
-class Interests(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(30))
-    emoji = db.Column(db.String(30))
-
-    def __repr__(self):
-        return {"id": self.id, "name": self.name, "emoji": self.emoji}
-    
-    def to_dict(self):
-        return {"id": self.id, "name": self.name, "emoji": self.emoji}
-    
 class UserDailyMood(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -113,16 +102,16 @@ class UserDailyMood(db.Model):
 class Messages(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    reciever_id = db.Column(db.Integer)
+    receiver_id = db.Column(db.Integer)
     sent_at = db.Column(db.TIMESTAMP, default=time.time())
     content = db.Column(db.Text)
     type = db.Column(db.Integer)
 
     def __repr__(self):
-        return {"id": self.id, "sender_id": self.sender_id, "reciever_id": self.reciever_id, "sent_at": self.sent_at, "content": self.content, "type": self.type}
+        return {"id": self.id, "sender_id": self.sender_id, "receiver_id": self.receiver_id, "sent_at": self.sent_at, "content": self.content, "type": self.type}
     
     def to_dict(self):
-        return {"id": self.id, "sender_id": self.sender_id, "reciever_id": self.reciever_id, "sent_at": self.sent_at, "content": self.content, "type": self.type}
+        return {"id": self.id, "sender_id": self.sender_id, "receiver_id": self.receiver_id, "sent_at": self.sent_at, "content": self.content, "type": self.type}
     
 class Match(db.Model):
     id = db.Column(db.Integer, primary_key=True)
