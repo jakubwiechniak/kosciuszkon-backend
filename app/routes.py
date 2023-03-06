@@ -191,7 +191,7 @@ def get_friends(user_id):
 @app.route('/message', methods=['POST'])
 def message():
     if request.method == 'POST':
-        message = Messages(sender_id=request.json['sender_id'], reciever_id=request.json['reciever_id'],
+        message = Messages(sender_id=request.json['sender_id'], reciever_id=request.json['receiver_id'],
                            sent_at=datetime.now(), content=request.json['content'],
                            type=1)
         db.session.add(message)
@@ -207,8 +207,8 @@ def message_simple(user_id):
         for id in json.loads(user.friends):
             messages.append({
                 "id": id,
-                "messages": [message.to_dict() for message in Messages.query.filter(or_(and_(Messages.reciever_id == user_id, Messages.sender_id == id),
-                                                                                        and_(Messages.sender_id == user_id, Messages.reciever_id == id)))]
+                "messages": [message.to_dict() for message in Messages.query.filter(or_(and_(Messages.receiver_id == user_id, Messages.sender_id == id),
+                                                                                        and_(Messages.sender_id == user_id, Messages.receiver_id == id)))]
             })
         return messages
 
