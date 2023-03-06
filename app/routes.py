@@ -145,12 +145,17 @@ def add_friend(user_id):
         except:
             return failed("Usunięcie przyjaciela się nie udało")
         
-@app.route('/user/<user_id>/friends', methods=['GET'])
+@app.route('/friends/<user_id>', methods=['GET'])
 def get_friends(user_id):
     if request.method == 'GET':
         try:
             user = User.query.get(user_id)
-            return success(user.friends)
+            friends = user.get_friends()
+            print(friends)
+            if friends:
+                return success([User.query.get(id).to_dict() for id in friends])
+            else:
+                return failed(None)
         except:
             return failed("Nie udało się pobrać listy przyjaciół")
 
